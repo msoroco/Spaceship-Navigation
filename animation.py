@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
 from simulator import Spaceship
+from tqdm import tqdm
 
 # for some Windows machines
 # import matplotlib as mpl
@@ -9,6 +10,7 @@ from simulator import Spaceship
 
 class SimAnimation():
     def __init__(self, bodies, objective, limits, frame, iterations, i_episode, save_freq, title = "", draw_neighbourhood=False, grid_radius=None, box_width=None):
+        print("animating")
         self.draw_neighbourhood = draw_neighbourhood
         if self.draw_neighbourhood and (grid_radius==None or box_width==None):
             raise Exception("If draw_neighbourhood is set to True, grid_radius and box_width must be specified") 
@@ -27,9 +29,14 @@ class SimAnimation():
         # saving to m4 using ffmpeg writer
         # title: `episode`_sim-name.mp4
         if (i_episode) % self.save_stride == 0:
-            writervideo = animation.FFMpegWriter(fps=60)
-            name = str(i_episode) + "_" + title + ".mp4"
-            anim.save(name, writer=writervideo)
+            # writervideo = animation.FFMpegWriter(fps=60)
+            # name = str(i_episode) + "_" + title + ".gif"
+            # anim.save(name, writer=writervideo)
+            # below is tested on nersc. works faster.
+            writergif = animation.PillowWriter(fps=30)
+            name = str(i_episode) + "_" + title + ".gif"
+            with tqdm(total=iterations, desc="Saving animation", unit="frame") as pbar:
+                anim.save(name, writer=writergif, progress_callback=lambda i, n: pbar.update(1))
 
 
 
