@@ -153,7 +153,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--episodes', type=int, default=500, help='Num episodes')
     parser.add_argument('--max_steps', type=int, default=1000, help='Maximum steps per episode')
-    parser.add_argument('--offline_update_modeling', type=int, default=0, help='Additional offline update_modeling')
+    parser.add_argument('--offline_training', type=int, default=0, help='Additional offline update_modeling')
     parser.add_argument('--simulation', type=str, default="sim1", help='Simulation json')
     parser.add_argument('--draw_neighbourhood', action="store_true", help='Draw neighbourhood')
     parser.add_argument('--test', action="store_true", help='Test out agent')
