@@ -170,7 +170,7 @@ class Simulator:
                     prev_pos = self.agent.history[-2]
                     agent_line = (curr_pos - prev_pos)
                     body_pos = (body.position - prev_pos)
-                    projection_body = np.dot(agent_line, body_pos)/np.dot(agent_line, agent_line) * agent_line
+                    projection_body = np.dot(agent_line, body_pos)/(np.dot(agent_line, agent_line)+1e6 )* agent_line
                     # check that distance between orthogonal projection of body into agents path and body is less than tolerance
                     if np.linalg.norm(body.position - (projection_body + prev_pos)) < self.tolerance:
                         # check that body lies between the two positions of agent
