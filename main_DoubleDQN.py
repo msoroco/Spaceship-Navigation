@@ -1,4 +1,5 @@
 import os
+import time
 import numpy as np
 import random
 import argparse
@@ -158,6 +159,7 @@ if __name__ == '__main__':
     parser.add_argument('--tau', type=float, default=0.005, help='Soft update weight')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--episodes', type=int, default=500, help='Num episodes')
+    parser.add_argument('--start_episode', type=int, default=0, help='Start episode')
     parser.add_argument('--max_steps', type=int, default=1000, help='Maximum steps per episode')
     parser.add_argument('--offline_training', type=int, default=0, help='Additional offline update_modeling')
     parser.add_argument('--simulation', type=str, default="sim1", help='Simulation json')
@@ -192,6 +194,7 @@ if __name__ == '__main__':
     TAU = args.tau
     LR = args.lr
     EPISODES = args.episodes
+    START_EPISODE = args.start_episode
     MAX_STEPS = args.max_steps
     DRAW_NEIGHBOURHOOD = args.draw_neighbourhood
     TEST = args.test
@@ -208,10 +211,25 @@ if __name__ == '__main__':
     # setup wandb
     if args.wandb_project is not None:
         import wandb
+        run_id_file = f"./runid_{args.experiment_name}.txt"
+        if os.path.exists(run_id_file):
+            with open(run_id_file, 'r') as f:
+                run_id = f.read().strip()
+        else:
+            run_id = wandb.util.generate_id()
+            with open(run_id_file, 'w') as f:
+                f.write(run_id)
+
+        # in case run_id is empty (first run)
+        if not run_id:
+            run_id = wandb.util.generate_id()
+            with open(run_id_file, 'w') as f:
+                f.write(run_id)
+
         config = vars(args).copy()
         for k in ['draw_neighbourhood', 'test', 'animate', 'wandb_project']:
             config.pop(k, None)
-        wandb.init(project=args.wandb_project, config=config, name=args.experiment_name)
+        wandb.init(project=args.wandb_project, config=config, name=args.experiment_name, id=run_id, resume="allow")
         print("Initialized wandb")
 
     sim = Simulator(f"./simulations/{args.simulation}.json")
@@ -245,7 +263,7 @@ if __name__ == '__main__':
         test_episodes_length = 0
     objective_proportion = 0
 
-    for i_episode in range(EPISODES + OFFLINE_TRAINING_EPS):
+    for i_episode in range(START_EPISODE, EPISODES + OFFLINE_TRAINING_EPS):
         # Empty GPU
         torch.cuda.empty_cache()
         gc.collect()
@@ -260,6 +278,7 @@ if __name__ == '__main__':
         total_reward = 0
         number_steps = 0
         # Run simulation and update_modeling
+        start = time.time()
         for t in range(MAX_STEPS):
             action = select_action(state)
             next_state, reward, termination_condition = sim.step(action)
@@ -303,11 +322,11 @@ if __name__ == '__main__':
             # Increment step
             training_step += 1
             if (i_episode) % 10 == 0:
-                print(f"Episode {i_episode+1}, Training step: {training_step}, Step Loss: {loss.item()}, Train episode length {t+1}, Mean Loss: {mean_loss}, objective_reached rate: {objective_proportion}, offline learning: {OFFLINE}")
+                print(f"Episode {i_episode+1}, Wall_Time: {time.time() - start}, Training_step: {training_step}, Step_Loss: {loss.item()}, Train_episode_length {t+1}, Mean_Loss: {mean_loss}, objective_reached_rate: {objective_proportion}, offline_learning: {OFFLINE}")
         else:
             test_return = total_reward
             test_episodes_length = number_steps
-            print(f"Test return: {test_return}, Test_Episode_Length: {test_episodes_length}")
+            print(f"Episode {i_episode+1}, Test_return: {test_return}, Test_Episode_Length: {test_episodes_length}, Wall_Time: {time.time() - start}")
         
         if i_episode < 10 or i_episode % 20 == 0:
             draw_heatmap(sim, args.title)   
@@ -318,8 +337,21 @@ if __name__ == '__main__':
 
         # Record output
         if args.wandb_project is not None:
-            wandb.log({"loss": mean_loss, "objective_proportion": objective_proportion, "reward": total_reward, 
-                       "number_steps": number_steps, "episode": i_episode, "step": training_step})
+            if not TEST:
+                wandb.log({
+                    "Training/loss": mean_loss,
+                    "Training/objective_proportion": objective_proportion,
+                    "Training/reward": total_reward,
+                    "Training/number_steps": number_steps,
+                    "Training/episode": i_episode,
+                    "Training/step": training_step
+                })
+            else:
+                wandb.log({
+                    "Testing/test_reward": test_return,
+                    "Testing/test_episodes_length": test_episodes_length,
+                    "Testing/test_episode": i_episode
+                })
         # Save model every 100 episodes
         if (i_episode + 1) % 100 == 0 and not TEST:
             save_model(policy_net, f"./models/{args.model}.pth")
@@ -335,4 +367,10 @@ if __name__ == '__main__':
 
     # Save final model
     if not TEST:
+        # checkpoint
+        print(f"simulation: {args.simulation}, model: {args.model}, episodes: {EPISODES}")
+        model_path = f"./models/{args.model}_epis={i_episode}.pth"
+        save_model(policy_net, model_path)
+        wandb.save(model_path)
+        # update model
         save_model(policy_net, f"./models/{args.model}.pth")
