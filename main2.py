@@ -190,7 +190,7 @@ if __name__ == '__main__':
     DRAW_NEIGHBOURHOOD = args.draw_neighbourhood
     TEST = args.test
     ANIMATE = args.animate
-    OFFLINE_update_modelING_EPS = args.offline_update_modeling
+    OFFLINE_TRAINING_EPS = args.offline_training
     OFFLINE = False
     HARD_UPDATE = True if args.hard_update > 0 else False
     HARD_UPDATE_STEPS = args.hard_update
@@ -233,7 +233,7 @@ if __name__ == '__main__':
 
     update_modeling_step = 1
     objective_proportion = 0
-    for i_episode in range(EPISODES + OFFLINE_update_modelING_EPS):
+    for i_episode in range(EPISODES + OFFLINE_TRAINING_EPS):
         # Empty GPU
         torch.cuda.empty_cache()
         gc.collect()
