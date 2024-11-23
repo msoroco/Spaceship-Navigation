@@ -15,6 +15,6 @@
     "frames": 4, 
     "frame_stride": 1,
     "limits": 900,
-    "verbose": true,
+    "verbose": false,
     "introduce_new_bodies": 0.0005
 }

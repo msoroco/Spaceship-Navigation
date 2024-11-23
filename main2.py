@@ -62,7 +62,7 @@ def select_action(state):
         timesteps."""
     sample = np.random.uniform(0, 1)
 
-    l = np.clip(update_modeling_step/EXP_ANNEAL_SAMPLES, 0, 1)
+    l = np.clip(training_step/EXP_ANNEAL_SAMPLES, 0, 1)
     eps_threshold = (1 - l) * EPS_START + l * EPS_END
 
     if TEST or OFFLINE or sample <= eps_threshold:
@@ -113,7 +113,7 @@ def update_model():
 
 def update_target():
     if HARD_UPDATE:
-        if update_modeling_step % HARD_UPDATE_STEPS == 0:
+        if training_step % HARD_UPDATE_STEPS == 0:
            # Hard update of the target network's weights
             # θ′ ← θ
             target_net_state_dict = target_net.state_dict()
@@ -232,8 +232,13 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(policy_net.parameters(), lr=LR)
     memory = ReplayMemory(capacity=5000)
 
-    update_modeling_step = 1
+    if not TEST:
+        training_step = 1
+    else:
+        test_return = 0
+        test_episodes_length = 0
     objective_proportion = 0
+
     for i_episode in range(EPISODES + OFFLINE_TRAINING_EPS):
         # Empty GPU
         torch.cuda.empty_cache()
@@ -243,7 +248,7 @@ if __name__ == '__main__':
         # Initialize animation
         if ANIMATE:
             anim_frames = [sim.get_current_frame()]
-        print(f"Starting{' (offline) ' if OFFLINE else ' '} Episode: {i_episode+1}.")
+        # print(f"Starting{' (offline) ' if OFFLINE else ' '} Episode: {i_episode+1}.")
         # Episodic metrics
         mean_loss = 0
         total_reward = 0
@@ -275,13 +280,9 @@ if __name__ == '__main__':
                 
             #     update_target()
 
-            # Increment step
-            update_modeling_step += 1
-            if (t + 1) % 100 == 0:
-                print("Step:", t+1)
+            
             # Check for termination
             if terminated:
-                print("Finished at:", t+1)
                 # Update objective proportion
                 objective_proportion += (1 if termination_condition == 2 else 0 - objective_proportion) / (i_episode + 1)
                 break
@@ -292,6 +293,15 @@ if __name__ == '__main__':
             mean_loss += (loss - mean_loss) / (t + 1)
             
             update_target()
+
+            # Increment step
+            training_step += 1
+            if (i_episode) % 10 == 0:
+                print(f"Episode {i_episode+1}, Training step: {training_step}, Step Loss: {loss.item()}, Train episode length {t+1}, Mean Loss: {mean_loss}, objective_reached rate: {objective_proportion}, offline learning: {OFFLINE}")
+        else:
+            test_return = total_reward
+            test_episodes_length = number_steps
+            print(f"Test return: {test_return}, Test_Episode_Length: {test_episodes_length}")
         
         if i_episode < 10 or i_episode % 20 == 0:
             draw_heatmap(sim, args.title)   
@@ -303,7 +313,7 @@ if __name__ == '__main__':
         # Record output
         if args.wandb_project is not None:
             wandb.log({"loss": mean_loss, "objective_proportion": objective_proportion, "reward": total_reward, 
-                       "number_steps": number_steps, "episode": i_episode, "step": update_modeling_step})
+                       "number_steps": number_steps, "episode": i_episode, "step": training_step})
         # Save model every 100 episodes
         if (i_episode + 1) % 100 == 0 and not TEST:
             save_model(policy_net, f"./models/{args.model}.pth")
