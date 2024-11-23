@@ -11,15 +11,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 BOX_WIDTH = 20
-GRID_RADIUS = 8
-DRAW_NEIGHBOURHOOD = True
+GRID_RADIUS = 10
+DRAW_NEIGHBOURHOOD = False
 
 T = 1000
 
 
 ## demonstration of the simulator interface
 if __name__ == '__main__':
-    sim = Simulator("./sim1.json")
+    sim = Simulator("./simulations/hard.json")
     
     #### testing:
     sim.start()
@@ -31,6 +31,7 @@ if __name__ == '__main__':
         states.append(sim.get_current_frame())
         # print(sim.info())
         if terminated == True:
-            break
+            # break
+            pass
 
     anim = SimAnimation(sim.bodies, sim.objective, sim.limits, states, len(states), 1, 1, "speed5.5", DRAW_NEIGHBOURHOOD, sim.grid_radius, sim.box_width)

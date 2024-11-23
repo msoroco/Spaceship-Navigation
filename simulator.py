@@ -32,6 +32,7 @@ class Simulator:
         * `bodies`:
         * `start_zeros`: Have the simulation pad the missing frames with all zeros for first |`frames`| frames (default is do nothing)
         * `start_copies`: Have the simulation pad the missing frames with itself for first |`frames`| frames (`start_zeros` will default if both `True`)
+        *`introduce_new_bodies`: Have the simulation introduce new bodies at random steps with `introduce_new_bodies`% probability
         """
         json_obj = Simulator.__load_json(filepath)
         self._json_obj = json_obj
@@ -48,6 +49,7 @@ class Simulator:
         self.start_copies = self._json_obj.get("self.start_copies", False)
         self.verbose = self._json_obj.get("verbose", False)
         self.random_agent_position = self._json_obj.get("random_agent_position", True)
+        self.introduce_new_bodies = self._json_obj.get("introduce_new_bodies", 0)
 
     def get_bodies_and_objective(self):
         return self.bodies, self.objective
@@ -113,6 +115,11 @@ class Simulator:
                 * 1 if a penalty is applied
                 * 2 if a reward is applied for reaching the objective
         """
+        sample = random.uniform(0, 1)
+        if sample < self.introduce_new_bodies:
+            self.__add_new_body()
+
+
         self.agent.do_action(action)
         for body in self.bodies:
             body.step()
@@ -202,6 +209,27 @@ class Simulator:
         self.__current_state_shape = state.shape
         return state
     
+    def __add_new_body(self):
+        edge = random.choice([0, 1, 2, 3])
+        position = np.random.uniform(-self.limits, self.limits)
+        if edge == 0:  # Top edge
+            coordinate = (position, self.limits)
+        elif edge == 1:  # Right edge
+            coordinate = (self.limits, position)
+        elif edge == 2:  # Bottom edge
+            coordinate = (position, -self.limits)
+        elif edge == 3:  # Left edge
+            coordinate = (-self.limits, position)
+
+        colors = ["cyan", "purple"]
+
+        # Randomly choose a color
+        color = random.choice(colors)
+
+        body = Body(mass=0, position=coordinate, velocity=np.random.uniform(0, 0.4, size=2), color=color)
+        self.bodies.append(body)
+        return
+
 
     def __get_current_frame(self, given_position=None):
         if given_position is None:
@@ -250,19 +278,23 @@ class Simulator:
 
 
 class Body:
-    def __init__(self, mass, position, velocity, color):
+    def __init__(self, mass, position, velocity, color, fixed=False):
         self.mass = float(mass)
         self.position = np.array(position, dtype=float)
         self.velocity = np.array(velocity, dtype=float)
         self.acceleration = np.zeros(2, dtype=float)
         self.color = color
         self.history = np.array([position])
+        self.fixed = fixed
 
     def step(self):
-        self.velocity += 5*self.acceleration
-        self.position += 5*self.velocity
-        self.acceleration = np.zeros(2, dtype=float)
-        self.history = np.vstack([self.history, self.position])
+        if not self.fixed:
+            self.velocity += 5*self.acceleration
+            self.position += 5*self.velocity
+            self.acceleration = np.zeros(2, dtype=float)
+            self.history = np.vstack([self.history, self.position])
+        else:
+            self.history = np.vstack([self.history, self.position])
 
     # Compute gravity on us by a body
     def gravity(self, body):
