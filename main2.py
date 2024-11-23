@@ -49,7 +49,7 @@ def draw_heatmap(sim : Simulator, title):
     cbar_ax = fig.add_axes([0.91, 0.15, 0.02, 0.7])  # [left, bottom, width, height]
     fig.colorbar(pcm, cax=cbar_ax)
 
-    plt.tight_layout(rect=[0, 0, 0.9, 1])  # Adjust layout to make space for colorbar
+    # plt.tight_layout(rect=[0, 0, 0.9, 1])  # Adjust layout to make space for colorbar
     plt.show()
 
     plt.show()
@@ -153,7 +153,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--episodes', type=int, default=500, help='Num episodes')
     parser.add_argument('--max_steps', type=int, default=1000, help='Maximum steps per episode')
-    parser.add_argument('--offline_update_modeling', type=int, default=0, help='Additional offline update_modeling')
+    parser.add_argument('--offline_training', type=int, default=0, help='Additional offline update_modeling')
     parser.add_argument('--simulation', type=str, default="sim1", help='Simulation json')
     parser.add_argument('--draw_neighbourhood', action="store_true", help='Draw neighbourhood')
     parser.add_argument('--test', action="store_true", help='Test out agent')
@@ -190,13 +190,14 @@ if __name__ == '__main__':
     DRAW_NEIGHBOURHOOD = args.draw_neighbourhood
     TEST = args.test
     ANIMATE = args.animate
-    OFFLINE_update_modelING_EPS = args.offline_update_modeling
+    OFFLINE_TRAINING_EPS = args.offline_training
     OFFLINE = False
     HARD_UPDATE = True if args.hard_update > 0 else False
     HARD_UPDATE_STEPS = args.hard_update
 
-    if TEST: # There is no need to do multiple episodes when testing
+    if TEST and ANIMATE: # There is no need to do multiple episodes when animating a test run
         EPISODES = 1
+        OFFLINE_TRAINING_EPS = 0
 
     # setup wandb
     if args.wandb_project is not None:
@@ -233,14 +234,14 @@ if __name__ == '__main__':
 
     update_modeling_step = 1
     objective_proportion = 0
-    for i_episode in range(EPISODES + OFFLINE_update_modelING_EPS):
+    for i_episode in range(EPISODES + OFFLINE_TRAINING_EPS):
         # Empty GPU
         torch.cuda.empty_cache()
         gc.collect()
         # Initialize simulation
         state = sim.start()
         # Initialize animation
-        if TEST or ANIMATE:
+        if ANIMATE:
             anim_frames = [sim.get_current_frame()]
         print(f"Starting{' (offline) ' if OFFLINE else ' '} Episode: {i_episode+1}.")
         # Episodic metrics
@@ -263,7 +264,7 @@ if __name__ == '__main__':
             # Move to the next state
             state = next_state
 
-            if TEST or ANIMATE:
+            if ANIMATE:
                 # Animate
                 anim_frames.append(sim.get_current_frame())
             # if not TEST:
@@ -307,9 +308,14 @@ if __name__ == '__main__':
         if (i_episode + 1) % 100 == 0 and not TEST:
             save_model(policy_net, f"./models/{args.model}.pth")
         
-        if TEST or ANIMATE:
-            SimAnimation(sim.bodies, sim.objective, sim.limits, anim_frames, len(anim_frames), i_episode + 1, args.save_freq, args.title, 
-                         DRAW_NEIGHBOURHOOD, sim.grid_radius, sim.box_width)
+        if ANIMATE:
+            if TEST:
+                SimAnimation(sim.bodies, sim.objective, sim.limits, anim_frames, len(anim_frames), i_episode + 1, save_freq=1, title=args.title, 
+                    draw_neighbourhood=DRAW_NEIGHBOURHOOD, grid_radius=sim.grid_radius, box_width=sim.box_width)
+            else:
+                SimAnimation(sim.bodies, sim.objective, sim.limits, anim_frames, len(anim_frames), i_episode + 1, args.save_freq, args.title, 
+                            DRAW_NEIGHBOURHOOD, sim.grid_radius, sim.box_width)
+            
 
     # Save final model
     if not TEST:
