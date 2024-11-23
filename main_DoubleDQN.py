@@ -53,17 +53,18 @@ def draw_heatmap(sim : Simulator, title):
     plt.show()
 
     plt.show()
-    plt.savefig('heatmap_' + title +'.png')
+    plt.savefig('heatmap_' + title +'_DoubleDQN.png')
 
 
 def select_action(state):
     """ the exploration probability starts with a value of `EPS_START` and
         then linearly anneals to `EPS_END` over the course of `EXP_ANNEAL_SAMPLES`
         timesteps."""
-    sample = np.random.uniform(0, 1)
+    if not TEST:
+        sample = np.random.uniform(0, 1)
 
-    l = np.clip(training_step/EXP_ANNEAL_SAMPLES, 0, 1)
-    eps_threshold = (1 - l) * EPS_START + l * EPS_END
+        l = np.clip(training_step/EXP_ANNEAL_SAMPLES, 0, 1)
+        eps_threshold = (1 - l) * EPS_START + l * EPS_END
 
     if TEST or OFFLINE or sample <= eps_threshold:
         with torch.no_grad():
@@ -77,9 +78,14 @@ def compute_target_values(batch_size, reward, next_state, termination_flag):
     next_state_values = torch.zeros(batch_size, device=device)
 
     with torch.no_grad():
-        # The Q value corresponds to the argmax action
-        next_state_values[~termination_flag] = target_net(next_state).max(1)[0]
-    return reward + (DISCOUNT_FACTOR * next_state_values.unsqueeze(1))
+        # use the policy net to get the argmax action to reduce overestimation bias
+        arg_max_actions = policy_net(next_state).max(1)[1] # max: (values, indices) so [1] corresponds to argmax action
+        # The Q value corresponds to the argmax action, 0 if terminated (ie ignore the action)
+        batch_indices = torch.arange(next_state.size(0), device=device)
+        next_state_values[~termination_flag] = target_net(next_state)[batch_indices, arg_max_actions]
+
+    targets =  reward + (1 * next_state_values.unsqueeze(1))
+    return targets
 
 
 def update_model():
@@ -320,10 +326,10 @@ if __name__ == '__main__':
         
         if ANIMATE:
             if TEST:
-                SimAnimation(sim.bodies, sim.objective, sim.limits, anim_frames, len(anim_frames), i_episode + 1, save_freq=1, title=args.title, 
+                SimAnimation(sim.bodies, sim.objective, sim.limits, anim_frames, len(anim_frames), i_episode + 1, save_freq=1, title=args.title + "_DoubleDQN", 
                     draw_neighbourhood=DRAW_NEIGHBOURHOOD, grid_radius=sim.grid_radius, box_width=sim.box_width)
             else:
-                SimAnimation(sim.bodies, sim.objective, sim.limits, anim_frames, len(anim_frames), i_episode + 1, args.save_freq, args.title, 
+                SimAnimation(sim.bodies, sim.objective, sim.limits, anim_frames, len(anim_frames), i_episode + 1, args.save_freq, args.title + "_DoubleDQN", 
                             DRAW_NEIGHBOURHOOD, sim.grid_radius, sim.box_width)
             
 
