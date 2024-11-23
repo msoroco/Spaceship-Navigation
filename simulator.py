@@ -37,42 +37,34 @@ class Simulator:
         self._json_obj = json_obj
         # State information
         self.reward_scheme = [0, self._json_obj["penalty"], self._json_obj["reward"]]
-        try: self.limits = json_obj["limits"]
-        except: self.limits = 300
-        try: self.grid_radius = json_obj["grid_radius"]
-        except: self.grid_radius = 10
-        try: self.box_width = json_obj["box_width"]
-        except: self.box_width = 20
-        try: self.frame_stride = json_obj["frame_stride"]
-        except: self.frame_stride = 1
-        try: self.frames = json_obj["frames"]
-        except: self.frames = 4
-        try: self.penalty = self._json_obj["penalty"]
-        except: self.penalty = -10
-        try: self.tolerance = self._json_obj["tolerance"]
-        except: self.tolerance = self.box_width
-        try: self.start_zeros = self._json_obj["start_zeros"]
-        except: self.start_zeros = True
-        try: self.start_copies = self._json_obj["self.start_copies"]
-        except: self.start_copies = False
-        try: self.verbose = self._json_obj["verbose"]
-        except: self.verbose = False
-        try: self.random_agent_position = self._json_obj["random_agent_position"]
-        except: self.random_agent_position = True
+        self.limits = json_obj.get("limits", 300)
+        self.grid_radius = json_obj.get("grid_radius", 10)
+        self.box_width = json_obj.get("box_width", 20)
+        self.frame_stride = json_obj.get("frame_stride", 1)
+        self.frames = json_obj.get("frames", 4)
+        self.penalty = self._json_obj.get("penalty", -10)
+        self.tolerance = self._json_obj.get("tolerance", self.box_width)
+        self.start_zeros = self._json_obj.get("start_zeros", True)
+        self.start_copies = self._json_obj.get("self.start_copies", False)
+        self.verbose = self._json_obj.get("verbose", False)
+        self.random_agent_position = self._json_obj.get("random_agent_position", True)
 
     def get_bodies_and_objective(self):
         return self.bodies, self.objective
     
     def get_environment_info(self):
         """
-        Returns the unit length mapping (box_width) and the width of environment
+        Returns the unit length mapping (box_width) and the width of environment.
+        * limits`: 1/2 width/height of the whole square environment.
+        * `box_width`: The width & height of a unit coordinate in the vector space.
         """
         return self.box_width, self.limits
 
 
     def info(self):
         """
-        Returns the number of actions (including do nothing) and the shape of states
+        Returns a tuple (S, N) where S is the shape of the state
+        and N is the number of actions (including do nothing)
         """
         n_actions = len(self.agent.actions) + 1
 
