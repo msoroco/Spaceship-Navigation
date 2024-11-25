@@ -83,3 +83,18 @@ class FullyConnectedDQN(nn.Module):
         x = torch.flatten(x, 1)
         x = self.lins(x)
         return x
+    
+
+
+class PolicyNetwork(nn.Module):
+    def __init__(self, input_dim, output_dim, hidden_dim=128):
+        super(PolicyNetwork, self).__init__()
+        self.fc1 = nn.Linear(input_dim, hidden_dim)  # First hidden layer
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)  # Second hidden layer
+        self.fc3 = nn.Linear(hidden_dim, output_dim)  # Output layer
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))  # Activation for the first hidden layer
+        x = F.relu(self.fc2(x))  # Activation for the second hidden layer
+        x = F.softmax(self.fc3(x), dim=-1)  # Output probabilities
+        return x
