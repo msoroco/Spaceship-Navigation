@@ -46,11 +46,14 @@ class SimAnimation():
         self.ax.cla()
         self.ax.scatter(self.objective[0], self.objective[1], marker='*', s=150)
         for body in self.bodies:
-            self.ax.plot(body.history[start:end, 0], body.history[start:end, 1], ".", color=body.color)
+            if body.fixed:
+                self.ax.plot(body.history[start:end, 0], body.history[start:end, 1], "-", color=body.color, s=150)
+            else:
+                self.ax.plot(body.history[start:end, 0], body.history[start:end, 1], ".", color=body.color)
             if isinstance(body, Spaceship) and self.draw_neighbourhood:
                 self.draw_state(self.states[end], body.history[end])
-        self.ax.set_xlim(-self.limits, self.limits)
-        self.ax.set_ylim(-self.limits, self.limits)
+        self.ax.set_xlim(-self.limits-10, self.limits+10)
+        self.ax.set_ylim(-self.limits-10, self.limits+10)
 
 
     def draw_state(self, state, position):
