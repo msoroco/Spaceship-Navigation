@@ -1,0 +1,17 @@
+{
+    "bodies": [
+    ],
+    "agent": {"position": [0, 500], "velocity": [0, 0], "color": "black", "speed": 3},
+    "random_agent_position": true,
+    "objective": [-300, -500],
+    "tolerance": 10,
+    "penalty": -10,
+    "reward": 10,
+    "grid_radius": 10,
+    "box_width": 20,
+    "frames": 10, 
+    "frame_stride": 2,
+    "limits": 750,
+    "verbose": false,
+    "introduce_new_bodies": 0
+}
