@@ -12,8 +12,8 @@
     "reward": 10,
     "grid_radius": 10,
     "box_width": 20,
-    "frames": 10, 
-    "frame_stride": 2,
+    "frames": 1, 
+    "frame_stride": 16,
     "limits": 750,
     "verbose": false,
     "introduce_new_bodies": 0
