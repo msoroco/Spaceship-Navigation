@@ -8,9 +8,9 @@ import numpy as np
 # Hyperparameters
 num_episodes = 1000
 gamma = 0.99  # Discount factor
-learning_rate = 0.01
+learning_rate = 0.0001
 buffer_capacity = 10000  # Capacity of replay buffer
-batch_size = 32
+batch_size = 16
 
 # Initialize environment and policy network
 env = Simulator(filepath="simulations/sim2.json")
@@ -33,7 +33,13 @@ for episode in range(num_episodes):
     while not done:
         # Get action probabilities
         action_probs = policy(state.flatten())
-        action_dist = torch.distributions.Categorical(action_probs)
+        action_probs = torch.clamp(action_probs, min=1e-6, max=1.0)
+        # print(action_probs)
+        if torch.isnan(action_probs).any():
+            print(f"NaN detected in action_probs: {action_probs}")
+            continue
+        else:
+            action_dist = torch.distributions.Categorical(action_probs)
         action = action_dist.sample()
 
         # Step in the environment
@@ -58,7 +64,10 @@ for episode in range(num_episodes):
 
     # Normalize rewards for stability
     discounted_rewards = torch.tensor(discounted_rewards)
-    discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (discounted_rewards.std() + 1e-9)
+    if discounted_rewards.std() > 1e-9:
+        discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (discounted_rewards.std() + 1e-9)
+    else:
+        discounted_rewards = discounted_rewards - discounted_rewards.mean()  # Skip std normalization if std is too small
 
     # Policy Gradient update
     optimizer.zero_grad()
@@ -67,6 +76,7 @@ for episode in range(num_episodes):
         policy_loss.append(-log_prob * R)
     policy_loss = torch.stack(policy_loss).sum()
     policy_loss.backward()
+    torch.nn.utils.clip_grad_norm_(policy.parameters(), max_norm=1.0)  # Clip gradients
     optimizer.step()
 
     print(f"Episode {episode + 1}/{num_episodes}, Total Reward: {sum(rewards)}")
@@ -77,4 +87,4 @@ for episode in range(num_episodes):
         # Further training steps using the sampled batch, such as Q-value updates, could go here
 
 # Save the trained policy
-torch.save(policy.state_dict(), "policy_network.pth")
+torch.save(policy.state_dict(), "models/policy_network.pth")

@@ -19,7 +19,7 @@ T = 1000
 
 ## demonstration of the simulator interface
 if __name__ == '__main__':
-    sim = Simulator("./simulations/hard.json")
+    sim = Simulator("./simulations/sim2.json")
     
     #### testing:
     sim.start()

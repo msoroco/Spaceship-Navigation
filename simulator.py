@@ -38,13 +38,13 @@ class Simulator:
         self._json_obj = json_obj
         # State information
         self.reward_scheme = [0, self._json_obj["penalty"], self._json_obj["reward"]]
-        self.limits = json_obj.get("limits", 300)
+        self.limits = json_obj.get("limits", 500)
         self.grid_radius = json_obj.get("grid_radius", 10)
         self.box_width = json_obj.get("box_width", 20)
         self.frame_stride = json_obj.get("frame_stride", 1)
         self.frames = json_obj.get("frames", 4)
         self.penalty = self._json_obj.get("penalty", -10)
-        self.tolerance = self._json_obj.get("tolerance", self.box_width)
+        self.tolerance = self._json_obj.get("tolerance", self.box_width*5)
         self.start_zeros = self._json_obj.get("start_zeros", True)
         self.start_copies = self._json_obj.get("self.start_copies", False)
         self.verbose = self._json_obj.get("verbose", False)
@@ -156,7 +156,7 @@ class Simulator:
         # Out of bounds
         elif abs(self.agent.position[0]) > self.limits or abs(self.agent.position[1]) > self.limits:
             termination_condition = 1
-            if self.verbose: print("Termination: out of bounds")
+            if self.verbose: print(f"Termination: out of bounds at position {self.agent.position}")
         # Check crash or Agent going through a body:
         else:
             for body in self.bodies:
@@ -181,9 +181,21 @@ class Simulator:
         return termination_condition
 
     def __get_reward(self, reward_index):
-        # No reward if 0, penalty is 1, reward is 2
-        return self.reward_scheme[reward_index] - 0.01 * np.clip(1 - self.tolerance / np.linalg.norm(self.objective - self.agent.position), 0, 1)
-    
+        reward = self.reward_scheme[reward_index]  # Base reward based on termination condition
+        
+        # Penalize for nearing boundaries
+        if abs(self.agent.position[0]) > self.limits - self.tolerance or abs(self.agent.position[1]) > self.limits - self.tolerance:
+            reward -= 5  # Add penalty
+        
+        # Reward for staying within bounds
+        if abs(self.agent.position[0]) < self.limits and abs(self.agent.position[1]) < self.limits:
+            reward += 0.1  # Add small reward
+
+        # Additional scaling based on distance to the objective
+        reward -= 0.01 * np.clip(1 - self.tolerance / np.linalg.norm(self.objective - self.agent.position), 0, 1)
+        
+        return reward
+
 
     def __get_state(self, given_position=None, forHeatmap=False):
         if forHeatmap:
@@ -307,6 +319,8 @@ class Spaceship(Body):
         super().__init__(0, position, velocity, color)
         self.actions = [self.thrust_up, self.thrust_down, self.thrust_left, self.thrust_right]
         self.speed = speed
+        self.speed *= 0.5  # Reduce movement speed
+
     
     # Accepts int for each of 4 possible actions
     def do_action(self, id):
