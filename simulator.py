@@ -156,7 +156,7 @@ class Simulator:
         # Out of bounds
         elif abs(self.agent.position[0]) > self.limits or abs(self.agent.position[1]) > self.limits:
             termination_condition = 1
-            if self.verbose: print(f"Termination: out of bounds at position {self.agent.position}")
+            # if self.verbose: print(f"Termination: out of bounds at position {self.agent.position}")
         # Check crash or Agent going through a body:
         else:
             for body in self.bodies:
@@ -185,16 +185,36 @@ class Simulator:
         
         # Penalize for nearing boundaries
         if abs(self.agent.position[0]) > self.limits - self.tolerance or abs(self.agent.position[1]) > self.limits - self.tolerance:
-            reward -= 5  # Add penalty
-        
+            reward -= 2  # Reduced penalty for being near boundaries
+
         # Reward for staying within bounds
         if abs(self.agent.position[0]) < self.limits and abs(self.agent.position[1]) < self.limits:
-            reward += 0.1  # Add small reward
+            reward += 0.1  # Small reward for staying within bounds
+
+        # Penalize for collisions with bodies
+        for body in self.bodies:
+            if body != self.agent:
+                distance_to_body = np.linalg.norm(self.agent.position - body.position)
+                if distance_to_body < self.tolerance:
+                    reward -= 5  # Moderate penalty for collision
+
+                # Penalize for getting too close to a body
+                if distance_to_body < self.tolerance * 2:
+                    reward -= 3  # Light penalty for approaching a body
+
+                # Reward for staying away from bodies
+                if distance_to_body > self.tolerance:
+                    reward += 0.2  # Reward for keeping distance from bodies
+
+        # Add reward for reaching the objective
+        if np.linalg.norm(self.agent.position - self.objective) < self.tolerance:
+            reward += 10  # Reward for reaching the objective
 
         # Additional scaling based on distance to the objective
         reward -= 0.01 * np.clip(1 - self.tolerance / np.linalg.norm(self.objective - self.agent.position), 0, 1)
-        
+
         return reward
+
 
 
     def __get_state(self, given_position=None, forHeatmap=False):

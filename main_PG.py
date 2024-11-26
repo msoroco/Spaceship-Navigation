@@ -6,14 +6,14 @@ from replay import ReplayMemory
 import numpy as np
 
 # Hyperparameters
-num_episodes = 1000
+num_episodes = 10000
 gamma = 0.99  # Discount factor
 learning_rate = 0.0001
 buffer_capacity = 10000  # Capacity of replay buffer
-batch_size = 16
+batch_size = 32
 
 # Initialize environment and policy network
-env = Simulator(filepath="simulations/sim2.json")
+env = Simulator(filepath="simulations/sim_big_stride.json")
 state = env.start()  # Start the environment
 state_dim = np.prod(state.shape)  # Flattened size of the state (10 * 21 * 21 = 4410)
 action_dim = env.info()[1]  # Get number of actions
