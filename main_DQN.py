@@ -152,8 +152,8 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=1024, help='Batch size')
     parser.add_argument('--gamma', type=float, default=0.99, help='Discount factor')
     parser.add_argument('--eps_start', type=float, default=0.9, help='Start value of epsilon')
-    parser.add_argument('--eps_end', type=float, default=0.05, help='End value of epsilon')
-    parser.add_argument('--exp_anneal_samples', type=int, default=5000, help='Max number of episodes that exploration probability is annealed over')
+    parser.add_argument('--eps_end', type=float, default=0.1, help='End value of epsilon')
+    parser.add_argument('--exp_anneal_samples', type=int, default=10000, help='Max number of episodes that exploration probability is annealed over')
     parser.add_argument('--tau', type=float, default=0.005, help='Soft update weight')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--episodes', type=int, default=500, help='Num episodes')
@@ -259,7 +259,7 @@ if __name__ == '__main__':
 
     loss_fn = nn.SmoothL1Loss()
     optimizer = torch.optim.Adam(policy_net.parameters(), lr=LR)
-    memory = ReplayMemory(capacity=20000)
+    memory = ReplayMemory(capacity=50000)
 
     if not TEST:
         training_step = 1
