@@ -83,8 +83,13 @@ class Simulator:
         if seed is not None:
             random.seed(seed)
         # TODO: change this to use rng if NONE (for velocity)
+        # if self.random_agent_position:
+        #     agent_position = np.random.uniform(-self.limits, self.limits, size=2)
+        #     self._json_obj["agent"]["position"] = agent_position
         if self.random_agent_position:
-            agent_position = np.random.uniform(-self.limits, self.limits, size=2)
+            radius = np.random.uniform(150, 280)
+            angle = np.random.uniform(0, 2 * np.pi)
+            agent_position = radius * np.array([np.cos(angle), np.sin(angle)])
             self._json_obj["agent"]["position"] = agent_position
 
         self.agent = Spaceship(** self._json_obj["agent"])
@@ -182,7 +187,9 @@ class Simulator:
 
     def __get_reward(self, reward_index):
         # No reward if 0, penalty is 1, reward is 2
-        return self.reward_scheme[reward_index] - 0.01 * np.clip(1 - self.tolerance / np.linalg.norm(self.objective - self.agent.position), 0, 1)
+        # return self.reward_scheme[reward_index] - 0.01 * np.clip(1 - self.tolerance / np.linalg.norm(self.objective - self.agent.position), 0, 1)
+    
+        return self.reward_scheme[reward_index] + 1 * np.clip(self.tolerance / np.linalg.norm(self.objective - self.agent.position), 0, 1)
     
 
     def __get_state(self, given_position=None, forHeatmap=False):
@@ -279,6 +286,16 @@ class Simulator:
 
 class Body:
     def __init__(self, mass, position, velocity, color, fixed=False):
+        if type(mass) == str:
+            if mass == "easy":
+                mass = random.uniform(2, 12)
+            elif mass == "medium":
+                mass = random.uniform(14, 24)
+            elif mass == "hard":
+                mass = random.uniform(26, 36)
+            else:
+                raise NotImplementedError("Only 'easy', 'medium', 'hard' are supported for mass. Otherwise provide a float")
+            print("Sampling mass", mass)
         self.mass = float(mass)
         self.position = np.array(position, dtype=float)
         self.velocity = np.array(velocity, dtype=float)
