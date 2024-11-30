@@ -189,7 +189,7 @@ class Simulator:
         # No reward if 0, penalty is 1, reward is 2
         # return self.reward_scheme[reward_index] - 0.01 * np.clip(1 - self.tolerance / np.linalg.norm(self.objective - self.agent.position), 0, 1)
     
-        return self.reward_scheme[reward_index] + 0.1 * np.clip(self.tolerance / np.linalg.norm(self.objective - self.agent.position), 0, 1)
+        return self.reward_scheme[reward_index] + 1 * np.clip(self.tolerance / np.linalg.norm(self.objective - self.agent.position), 0, 1)
     
 
     def __get_state(self, given_position=None, forHeatmap=False):
