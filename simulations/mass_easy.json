@@ -1,6 +1,6 @@
 {
     "bodies": [
-        {"mass": 30, "position": [0, 0], "velocity": [0, 0], "color": "orange"}
+        {"mass": "easy", "position": [0, 0], "velocity": [0, 0], "color": "orange", "fixed": true}
     ],
     "agent": {"position": [0, 160], "velocity": [0, 0], "color": "black", "speed": 6},
     "random_agent_position": true,
@@ -10,8 +10,8 @@
     "reward": 100,
     "grid_radius": 5,
     "box_width": 20,
-    "frames": 1, 
-    "frame_stride": 16,
+    "frames": 16, 
+    "frame_stride": 4,
     "limits": 300,
     "verbose": false
 }
