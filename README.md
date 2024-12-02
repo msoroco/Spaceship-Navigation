@@ -1,6 +1,7 @@
 ## Spaceship-Navigation
 
-# Deep Q-Learning
+# Double Deep Q-Learning & Proximal Policy Optimization
+* see the PPO branch for the PPO code and animations
 
 We use a deep Q-netowrk to train a spaceship agent to navigate a dynamic star system. We present an exploration of the challenges and ideas that we encountered throughout our investigation of the problem.
 
