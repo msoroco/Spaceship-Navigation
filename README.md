@@ -1,4 +1,4 @@
-## A SpaceQ Rocket explores Deep Space with Deep Q-Networks
+## Spaceship-Navigation
 
 # Deep Q-Learning
 
@@ -20,3 +20,7 @@ python main.py --model baseline --simulation sim1 --kernel_size 3 --test
 
 
 <!-- <img src="https://user-images.githubusercontent.com/63081584/235217950-e5574d0d-3622-49d9-a8cc-4a57516107ba.gif" width="500" height="500"/>  -->
+
+---
+
+Based on code by Soroco, Mauricio and Shpilevskiy, Frederick and Vandervalk, Joel: [A SpaceQ Rocket explores Deep Space with Deep Q-Networks](https://github.com/msoroco/c440-project). 2024
