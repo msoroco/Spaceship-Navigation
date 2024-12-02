@@ -8,7 +8,7 @@ We use a deep Q-netowrk to train a spaceship agent to navigate a dynamic star sy
 <!-- <img src="https://user-images.githubusercontent.com/63081584/235216113-a238a10a-cf90-4307-ac82-93948e089d7f.gif" width="500" height="500"/> -->
 
 <p float="left">
-  <img src="https://user-images.githubusercontent.com/63081584/235216113-a238a10a-cf90-4307-ac82-93948e089d7f.gif" width="300" height="300"/>
+  <img src="animations/1_model=DoubleDQN_sim=mass_easy_eps=9000_pos_r_0_train_eps=9000_DoubleDQN copy.gif" width="300" height="300"/>
   <img src="https://user-images.githubusercontent.com/63081584/235218435-636983e3-5a1f-4d66-8bf6-a5f31f8aee8e.gif" width="300" height="300"/> 
 </p>
 
