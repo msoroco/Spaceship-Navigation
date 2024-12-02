@@ -17,7 +17,7 @@ We use a deep Q-netowrk to train a spaceship agent to navigate a dynamic star sy
 
 python main.py --model baseline --simulation sim1 --kernel_size 3 --test
 
-![7_hmm](https://user-images.githubusercontent.com/63081584/235223870-c7e3720c-8a73-4f5a-8205-fd7ee0f57125.gif)
+![7_hmm](animations/curriculum_DQN/naive_curriculum_DQN.gif)
 
 
 <!-- <img src="https://user-images.githubusercontent.com/63081584/235217950-e5574d0d-3622-49d9-a8cc-4a57516107ba.gif" width="500" height="500"/>  -->
