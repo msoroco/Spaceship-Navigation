@@ -7,11 +7,11 @@
     "objective": [-100, -100],
     "tolerance": 10,
     "penalty": -10,
-    "reward": 100,
+    "reward": 10,
     "grid_radius": 5,
     "box_width": 20,
-    "frames": 1, 
-    "frame_stride": 16,
+    "frames": 16, 
+    "frame_stride": 4,
     "limits": 300,
     "verbose": false
 }

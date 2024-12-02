@@ -48,6 +48,7 @@ class Simulator:
         self.start_zeros = self._json_obj.get("start_zeros", True)
         self.start_copies = self._json_obj.get("self.start_copies", False)
         self.verbose = self._json_obj.get("verbose", False)
+        self.verbose = True
         self.random_agent_position = self._json_obj.get("random_agent_position", True)
         self.introduce_new_bodies = self._json_obj.get("introduce_new_bodies", 0)
 
@@ -295,7 +296,7 @@ class Body:
                 mass = random.uniform(26, 36)
             else:
                 raise NotImplementedError("Only 'easy', 'medium', 'hard' are supported for mass. Otherwise provide a float")
-            print("Sampling mass", mass)
+            # print("Sampling mass", mass)
         self.mass = float(mass)
         self.position = np.array(position, dtype=float)
         self.velocity = np.array(velocity, dtype=float)

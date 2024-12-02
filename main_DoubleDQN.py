@@ -16,7 +16,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def draw_heatmap(sim : Simulator, title):
+def draw_heatmap(sim : Simulator, title, dir="."):
     box_width, limits = sim.get_environment_info()
     _, n_actions = sim.info()
     states = [] 
@@ -28,7 +28,7 @@ def draw_heatmap(sim : Simulator, title):
     states = states.to(device)
     Qscores = policy_net(states)
     Qscores = Qscores.detach().cpu().numpy()
-    Qscores = Qscores.reshape((n_actions, int(np.floor(2*limits/box_width)) * int(np.floor(2*limits/box_width))))
+    Qscores = Qscores.T.reshape((n_actions, int(np.floor(2*limits/box_width)) * int(np.floor(2*limits/box_width))))
     Qscores = Qscores.reshape((n_actions, int(np.floor(2*limits/box_width)), int(np.floor(2*limits/box_width))))
 
     # Assuming Qscores is already defined
@@ -54,11 +54,14 @@ def draw_heatmap(sim : Simulator, title):
     plt.show()
 
     plt.show()
-    plt.savefig('heatmap_' + title +'_DoubleDQN.png')
+    os.makedirs(f"./{dir}", exist_ok=True)
+    plt.savefig(f'./{dir}/heatmap_' + title +'_DoubleDQN.png')
 
 def get_epsilon():
-    l = np.clip(training_step/EXP_ANNEAL_SAMPLES, 0, 1)
-    eps_threshold = (1 - l) * EPS_START + l * EPS_END
+    # l = np.clip(training_step/EXP_ANNEAL_SAMPLES, 0, 1)
+    # eps_threshold = (1 - l) * EPS_START + l * EPS_END
+
+    eps_threshold = EPS_END + (EPS_START - EPS_END) * np.exp(-1. * training_step / EXP_ANNEAL_SAMPLES)
     return eps_threshold
 
 def select_action(state):
@@ -158,10 +161,10 @@ if __name__ == '__main__':
     parser.add_argument('--gamma', type=float, default=0.99, help='Discount factor')
     parser.add_argument('--eps_start', type=float, default=0.9, help='Start value of epsilon')
     parser.add_argument('--eps_end', type=float, default=0.1, help='End value of epsilon')
-    parser.add_argument('--exp_anneal_samples', type=int, default=10000, help='Max number of episodes that exploration probability is annealed over')
+    parser.add_argument('--exp_anneal_samples', type=int, default=5000, help='Max number of episodes that exploration probability is annealed over')
     parser.add_argument('--tau', type=float, default=0.005, help='Soft update weight')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
-    parser.add_argument('--episodes', type=int, default=500, help='Num episodes')
+    parser.add_argument('--episodes', type=int, default=5000, help='Num episodes')
     parser.add_argument('--start_episode', type=int, default=0, help='Start episode')
     parser.add_argument('--max_steps', type=int, default=1000, help='Maximum steps per episode')
     parser.add_argument('--offline_training', type=int, default=0, help='Additional offline update_modeling')
@@ -171,6 +174,8 @@ if __name__ == '__main__':
     parser.add_argument('--animate', action="store_true", help='Animate (whether testing or not)')
     parser.add_argument('--wandb_project', type=str, help='Save results to wandb in the specified project')
     parser.add_argument('--experiment_name', type=str, help='Name of experiment in wandb')
+    parser.add_argument('--wandb_runid', type=str, help='Name of experiment in wandb')
+
     parser.add_argument('--model', default='policy_net', type=str, help='Name of model to store/load')
     parser.add_argument('--hard_update', default=0, type=int, help='Number of update_modeling steps between hard update of target network, if <= 0, then do soft updates')
 
@@ -185,7 +190,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_lins', default=3, type=int, help='Number of linear layers after convolutions')
     # Video stuff
     args, remaining = parser.parse_known_args()
-    parser.add_argument('--title',  type=str, default=f"{args.simulation}_{args.experiment_name}", help='Title for video & heatmap to save (defaults to loaded sim.json)(if --animate)')
+    parser.add_argument('--title',  type=str, default=f"{args.experiment_name}", help='Title for video & heatmap to save (defaults to loaded sim.json)(if --animate)')
     parser.add_argument('--save_freq',  type=int, default=args.episodes/3, help='save animation every ~ number of episodes (if --animate). Defaults to intervals of 1/3* --episodes')
     args = parser.parse_args()
 
@@ -214,20 +219,20 @@ if __name__ == '__main__':
     # setup wandb
     if args.wandb_project is not None:
         import wandb
-        run_id_file = f"./runid_{args.experiment_name}.txt"
-        if os.path.exists(run_id_file):
-            with open(run_id_file, 'r') as f:
-                run_id = f.read().strip()
-        else:
-            run_id = wandb.util.generate_id()
-            with open(run_id_file, 'w') as f:
-                f.write(run_id)
+        # run_id_file = f"./runid_{args.experiment_name}.txt"
+        # if os.path.exists(run_id_file):
+        #     with open(run_id_file, 'r') as f:
+        #         run_id = f.read().strip()
+        # else:
+        #     run_id = wandb.util.generate_id()
+        #     with open(run_id_file, 'w') as f:
+        #         f.write(run_id)
 
         # in case run_id is empty (first run)
-        if not run_id:
-            run_id = wandb.util.generate_id()
-            with open(run_id_file, 'w') as f:
-                f.write(run_id)
+        # if not run_id:
+        run_id = wandb.util.generate_id()
+            # with open(run_id_file, 'w') as f:
+            #     f.write(run_id)
 
         config = vars(args).copy()
         for k in ['draw_neighbourhood', 'test', 'animate', 'wandb_project']:
@@ -257,6 +262,8 @@ if __name__ == '__main__':
     
     if os.path.isfile(f"./models/{args.model}.pth"):
         load_model(policy_net, f"./models/{args.model}.pth", device)
+    # else:
+    #     raise Exception("Model not found")
 
     target_net.load_state_dict(policy_net.state_dict())
 
@@ -264,14 +271,14 @@ if __name__ == '__main__':
 
     loss_fn = nn.SmoothL1Loss()
     optimizer = torch.optim.Adam(policy_net.parameters(), lr=LR)
-    memory = ReplayMemory(capacity=50000)
+    memory = ReplayMemory()
 
     if not TEST:
         training_step = 1
     else:
         test_return = 0
         test_episodes_length = 0
-    objective_proportion = 0
+    objective_proportion2 = 0
     cummulative_total_reward=0
 
     for i_episode in range(START_EPISODE, EPISODES + OFFLINE_TRAINING_EPS):
@@ -309,20 +316,26 @@ if __name__ == '__main__':
                 # Animate
                 anim_frames.append(sim.get_current_frame())
             # if not TEST:
-            #     loss = update_model() 
+            #     loss = update_model()
                 
             #     # TODO: check this
             #     mean_loss += (loss - mean_loss) / (t + 1)
                 
             #     update_target()
 
+            #     # Increment step
+            #     training_step += 1
+                # if (i_episode) % 10 == 0:
+                #     print(f"Episode {i_episode+1}, Wall_Time: {time.time() - start}, Training_step: {training_step}, Step_Loss: {loss.item()}, Train_episode_length {t+1}, Mean_Loss: {mean_loss}, objective_reached_rate: {objective_proportion}, offline_learning: {OFFLINE}, eps_threshold: {get_epsilon()}")
+
             
             # Check for termination
             if terminated:
                 # Update objective proportion
-                objective_proportion += (1 if termination_condition == 2 else 0 - objective_proportion) / (i_episode + 1)
+                objective_proportion2 += ((1 if termination_condition == 2 else 0) - objective_proportion2) / (i_episode + 1)
                 break
         if not TEST:
+            # pass
             loss = update_model() 
             
             # TODO: check this
@@ -333,14 +346,14 @@ if __name__ == '__main__':
             # Increment step
             training_step += 1
             if (i_episode) % 10 == 0:
-                print(f"Episode {i_episode+1}, Wall_Time: {time.time() - start}, Training_step: {training_step}, Step_Loss: {loss.item()}, Train_episode_length {t+1}, Mean_Loss: {mean_loss}, objective_reached_rate: {objective_proportion}, offline_learning: {OFFLINE}, eps_threshold: {get_epsilon()}")
+                print(f"Episode {i_episode+1}, Wall_Time: {time.time() - start}, Training_step: {training_step}, Step_Loss: {loss.item()}, Train_episode_length {t+1}, Mean_Loss: {mean_loss}, objective_reached_rate: {objective_proportion2}, offline_learning: {OFFLINE}, eps_threshold: {get_epsilon()}")
         else:
             test_return = total_reward
             test_episodes_length = number_steps
-            print(f"Episode {i_episode+1}, Test_return: {test_return}, Test_Episode_Length: {test_episodes_length}, Wall_Time: {time.time() - start}")
+            # print(f"Episode {i_episode+1}, Test_return: {test_return}, Test_Episode_Length: {test_episodes_length}, Wall_Time: {time.time() - start}, objective_reached_rate: {objective_proportion2}")
         
         if i_episode < 10 or i_episode % 20 == 0:
-            draw_heatmap(sim, args.title)   
+            draw_heatmap(sim, args.title, dir="spaceship_heatmaps")   
         
         # Switch to offline update_modeling
         if not OFFLINE and i_episode >= EPISODES:
@@ -352,7 +365,7 @@ if __name__ == '__main__':
             if not TEST:
                 wandb.log({
                     "Training/loss": mean_loss,
-                    "Training/objective_proportion": objective_proportion,
+                    "Training/objective_proportion": objective_proportion2,
                     "Training/reward": total_reward,
                     "Training/cummulative_reward": cummulative_total_reward,
                     "Training/number_steps": number_steps,
@@ -364,11 +377,16 @@ if __name__ == '__main__':
                 wandb.log({
                     "Testing/test_reward": test_return,
                     "Testing/test_episodes_length": test_episodes_length,
-                    "Testing/test_episode": i_episode
+                    "Testing/test_episode": i_episode,
+                    "Testing/cummulative_reward": cummulative_total_reward,
+                    "Testing/objective_proportion": objective_proportion2,
                 })
         # Save model every 100 episodes
         if (i_episode + 1) % 100 == 0 and not TEST:
             save_model(policy_net, f"./models/{args.model}.pth")
+        if (i_episode + 1) % 3000 == 0 and not TEST:
+            os.makedirs(f"./{args.experiment_name}/", exist_ok=True)
+            save_model(policy_net, f"./{args.experiment_name}/{args.model}_epis={i_episode + 1}.pth")
         
         if ANIMATE:
             if TEST:
@@ -377,13 +395,21 @@ if __name__ == '__main__':
             else:
                 SimAnimation(sim.bodies, sim.objective, sim.limits, anim_frames, len(anim_frames), i_episode + 1, args.save_freq, args.title + f"e={i_episode + 1}_DQN", 
                             DRAW_NEIGHBOURHOOD, sim.grid_radius, sim.box_width)
-            
-
+    if TEST and not ANIMATE:    
+        print("====================================")
+        print(args.model)
+        print(args.simulation)
+        print()
+        print("final objective proportion: ", objective_proportion2)
+        print("final cummulative reward: ", cummulative_total_reward)
+        print("final average reward: ", cummulative_total_reward / EPISODES)
+        print("====================================")
     # Save final model
     if not TEST:
         # checkpoint
         print(f"simulation: {args.simulation}, model: {args.model}, episodes: {EPISODES}")
-        model_path = f"./models/{args.model}_epis={EPISODES + OFFLINE_TRAINING_EPS}.pth"
+        os.makedirs(f"./{args.experiment_name}/", exist_ok=True)
+        model_path = f"./{args.experiment_name}/{args.model}_epis={EPISODES + OFFLINE_TRAINING_EPS}.pth"
         save_model(policy_net, model_path)
         if args.wandb_project is not None:
             wandb.save(model_path)
